@@ -9,7 +9,17 @@
 !=============================================================================
 PROGRAM statistical_arbitrage
 
+  ! Parameters
+  REAL, PARAMETER :: mu = 0.16  ! annual drift
+  REAL, PARAMETER :: sigma = 0.2  ! volatility
+  REAL, PARAMETER :: r = 0.04  ! risk-free rate
+  REAL, PARAMETER  :: k = 0.2  !
+
+  ! Helpers
   INTEGER :: i, i_final, seed1, seed2
+  REAL :: present_value, mean_v, varaince_v
+  REAL :: t_final = 250, dt=1
+
 
 ! Plot a histogram of the random numbers generated from the Box-Muller transform
 OPEN(unit=100, file='random_numbers_box_muller.dat')
@@ -19,6 +29,22 @@ DO i=1, i_final
   WRITE(100,*) rand_box_muller(seed1, seed2)
 END DO
 CLOSE(100)
+
+! Simulate daily share price over one year
+t = 0
+share_price_today = 100
+OPEN(unit=10, file='daily_simulated_share_prices.dat')
+WRITE(10,*) t, share_price
+DO WHILE (t <= t_final)
+  last_price = share_price_today
+  delta_share = (mu * dt + sigma * dw) * share_price_today
+  t = t + dt
+  share_price_today = last_price + delta_share  ! Evaluate price tomorrow
+  WRITE(10,*) t, share_price_today
+END DO
+CLOSE(10)
+
+
 
 WRITE(6,*) "Answers to the coursework:"
 WRITE(6,*) "(a)", present_value, " = present value of portfolio "
@@ -142,8 +168,6 @@ END FUNCTION
   t_final = 1 * 250  ! 1 year
   dt = realisations / t_final
 
-
-
   t_final = 1 * 250  ! 1 year
   dt = realisations / t_final
   t_final = 2 * 250  ! 2 years
@@ -164,7 +188,7 @@ END FUNCTION
   CLOSE(10)
 
 
-  !
+
   ! ! Evaluate v from t=0 up to 20 years
   ! years = 20
   ! mean_v = SUM(v) / realisations
