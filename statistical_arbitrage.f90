@@ -37,25 +37,30 @@ END PROGRAM statistical_arbitrage
 REAL, FUNCTION derive_present_value()
   ! Parameters
   INTEGER, PARAMETER :: t_invest_bond = 100  ! Time sell for risk free bond
+  INTEGER, PARAMETER :: t_final = 1 * 365
+  INTEGER, PARAMETER ::
   INTEGER :: t0 = 0, dt = 1  ! Final day, Integration time
   REAL, PARAMETER :: r =   ! Risk free rate
   REAL, PARAMETER :: k =   !
 
   ! Helpers
   INTEGER :: t
-  REAL, DIMENSION(t0:t_invest_bond) :: v, share_price, discounted_value
-  share_price(1) = 100  ! Share price at t = 0
+  REAL, DIMENSION(t0:t_final) :: v, share_price, discounted_value
+
+
+  share_price(t0) = 100  ! Share price at t = 0
   t_invest_bond = 100
 
   ! Portfolio discounted value as a function of time (Eq. 2)
   IF (t <= t_invest_bond) THEN
-    v(t) = share_price(t) * exp(-r*t) - share_price(1)
+    v(t) = share_price(t) * exp(-r*t) - share_price(t0)
   ELSE
-    v(t) = share_price(1) * k
+    v(t) = share_price(t0) * k
   END IF
 
   ! Equation 2:
-  discounted_value(t) =
+  discounted_value = v
+  derive_present_value = discounted_value
 
 END FUNCTION
 
@@ -108,7 +113,7 @@ END FUNCTION
   dw = ...  ! Wiener process
 
   ! Simulate daily share price over one year
-  t = 1
+  t = 0
   DO WHILE (t <= t_final)
     delta_share = (mu * dt + sigma * dw) * share_price(t)
     t = t + dt
@@ -135,4 +140,10 @@ END FUNCTION
   ENDDO
 
   variance_v = 1.0/(n-1) * sum(x - mean_v) ** 2
+
+  OPEN(unit=10, file='simulated_share_prices.dat')
+    DO t=t0, t_final
+      WRITE(10,*) t, share_price(t)
+    END DO
+  CLOSE(10)
 END SUBROUTINE
