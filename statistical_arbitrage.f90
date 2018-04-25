@@ -9,6 +9,17 @@
 !=============================================================================
 PROGRAM statistical_arbitrage
 
+  INTEGER :: i, i_final, seed1, seed2
+
+! Plot a histogram of the random numbers generated from the Box-Muller transform
+OPEN(unit=100, file='random_numbers_box_muller.dat')
+i_final = 10000
+DO i=1, i_final
+  seed1 = i; seed2 = i_final + i
+  WRITE(100,*) rand_box_muller(seed1, seed2)
+END DO
+CLOSE(100)
+
 WRITE(6,*) "Answers to the coursework:"
 WRITE(6,*) "(a)", present_value, " = present value of portfolio "
 WRITE(6,*) ""
@@ -34,33 +45,32 @@ END PROGRAM statistical_arbitrage
 !================================================================
 ! (a) Derive the present value of the portfolio given in Eq. (2)
 !================================================================
-REAL, FUNCTION derive_present_value()
+REAL FUNCTION derive_present_value(t_present)
   ! Parameters
   INTEGER, PARAMETER :: t_invest_bond = 100  ! Time sell for risk free bond
-  INTEGER, PARAMETER :: t_final = 1 * 365
-  INTEGER, PARAMETER ::
-  INTEGER :: t0 = 0, dt = 1  ! Final day, Integration time
-  REAL, PARAMETER :: r =   ! Risk free rate
-  REAL, PARAMETER :: k =   !
+  INTEGER, PARAMETER :: t_final = 1 * 365  ! Should it not be 250?
+  INTEGER, PARAMETER :: t0 = 0  ! Initial day
+  ! INTEGER, PARAMETER ::
+  INTEGER :: dt = 1  ! Integration step
+  REAL, PARAMETER :: r = 0.04  ! Risk free rate, LIBOR
+  REAL, PARAMETER :: k = 0.2  !
+  INTEGER :: t_present
 
   ! Helpers
   INTEGER :: t
-  REAL, DIMENSION(t0:t_final) :: v, share_price, discounted_value
+  REAL, DIMENSION(t_final-t0) :: v, share_price, discounted_value
 
-
-  share_price(t0) = 100  ! Share price at t = 0
-  t_invest_bond = 100
+  share_price(1) = 100  ! Share price at t = 0
 
   ! Portfolio discounted value as a function of time (Eq. 2)
   IF (t <= t_invest_bond) THEN
-    v(t) = share_price(t) * exp(-r*t) - share_price(t0)
+    v(t) = share_price(t) * exp(-r*t) - share_price(1)
   ELSE
-    v(t) = share_price(t0) * k
+    v(t) = share_price(1) * k
   END IF
 
   ! Equation 2:
-  discounted_value = v
-  derive_present_value = discounted_value
+  derive_present_value = v(t_present)
 
 END FUNCTION
 
@@ -68,23 +78,24 @@ END FUNCTION
 ! (b) Function that generates a normally distributed random number with
 ! mean zero and variance one from the Box-Muller transform
 !===========================================================================
-REAL FUNCTION rand_box_muller()
-  INTEGER :: seed1 = 1, seed2 = 2
+REAL FUNCTION rand_box_muller(seed1, seed2)
+  INTEGER, INTENT(IN) :: seed1, seed2
   REAL :: x1, x2, z1, z2
   REAL :: pi = 3.1415926535897932384626433832795028841971693993751058209749445
   ! Intrinsic uniform random number
-  CALL SRAND(seed1); x1 = RAND()
-  CALL SRAND(seed2); x2 = RAND()
+  x1 = RAND()
+  x2 = RAND()
 
   ! Generate normally distributed numbers, according to Box-Muller transform
-  z1 = sqrt(-2.0 * ln(x1) * cos(2.0 * pi * x2))
-  z2 = sqrt(-2.0 * ln(x1)) * sin (2.0 * pi * x2)
+  z1 = sqrt(-2.0 * log(x1)) * cos(2.0 * pi * x2)
+  z2 = sqrt(-2.0 * log(x1)) * sin (2.0 * pi * x2)
 
   ! Only return either z1 or z2
   ! RETURN z1, z2
   rand_box_muller = z1
 END FUNCTION
 ! Perhaps visualize lots of random numbers drawn from this function for report
+! Compare with the uniform distribution of x1, x2
 
 
 !==============================================================================
@@ -92,58 +103,83 @@ END FUNCTION
 ! , and volatility, sigma = 0.2. Assume 250 trading days in a year. Use this to
 ! simulate daily share price for one year.
 !==============================================================================
- SUBROUTINE simulated_share_prices(t0, tfinal)
+ SUBROUTINE simulate_share_prices(years)
   ! Parameters
   REAL, PARAMETER :: mu = 0.16  ! annual drift
   REAL, PARAMETER :: sigma = 0.2  ! volatility
   REAL, PARAMETER :: r = 0.04  ! risk-free rate
   REAL, PARAMETER  :: k = 0.2  !
-  INTEGER, PARAMETER :: t_final = 250  ! trading days in a year
-  INTEGER, PARAMETER :: dt = 1  ! daily intervals
-  INTEGER, PARAMETER :: t0 = 0
+  INTEGER, PARAMETER :: realisations = 1000
+  ! INTEGER, PARAMETER :: t0 = 0
 
   ! Helpers
-  REAL, DIMENSION(t0:t_final) :: share_price
-  REAL simulated_share_prices(t0:tfinal)  ! Set as a vector
-  REAL :: dw =  ! Wiener process
+  INTEGER :: t_final  ! trading days in a year
+  REAL, DIMENSION(250) :: share_prices_daily  ! Daily simulated share prices
+  ! REAL, DIMENSION
+  REAL :: dw  ! Wiener process
   REAL :: delta_share
-  INTEGER :: t,
+  INTEGER :: t
+  REAL :: the_sum
+  REAL :: dt = 1  ! Daily intervals
+  INTEGER :: years
 
-  share_price(t0) = 100  ! Starting share price at t=0
-  dw = ...  ! Wiener process
+  share_prices_daily(1) = 100  ! Starting share price at t=0
 
   ! Simulate daily share price over one year
   t = 0
+  share_price_today = 100
+  OPEN(unit=10, file='daily_simulated_share_prices.dat')
+  WRITE(10,*) t, share_price
   DO WHILE (t <= t_final)
-    delta_share = (mu * dt + sigma * dw) * share_price(t)
+    last_price = share_price_today
+    delta_share = (mu * dt + sigma * dw) * share_price_today
     t = t + dt
-    share_price(t) = share_price(t-1) + delta_share  ! Evaluate price tomorrow
+    share_price_today = last_price + delta_share  ! Evaluate price tomorrow
+    WRITE(10,*) t, share_price_today
   END DO
-
-  ! share_price_after(1, years, realisations)
-
-  realisations = 1000
-  dt = realisations / t_final
+  CLOSE(10)
 
   t_final = 1 * 250  ! 1 year
+  dt = realisations / t_final
+
+
+
+  t_final = 1 * 250  ! 1 year
+  dt = realisations / t_final
   t_final = 2 * 250  ! 2 years
   t_final = 5 * 250  ! 5 years
 
-  ! Evaluate v from t=0 up to 20 years
-  years = 20
-  mean_v = SUM(v) / realisations
-  the_sum = 0
-  n = realisations
-
-  DO i=0, n
-    the_sum = the_sum (v(i) - mean_v) ** 2.
-  ENDDO
-
-  variance_v = 1.0/(n-1) * sum(x - mean_v) ** 2
-
-  OPEN(unit=10, file='simulated_share_prices.dat')
-    DO t=t0, t_final
-      WRITE(10,*) t, share_price(t)
-    END DO
+  ! Simulate daily share prices for given years
+  t = 0
+  share_price_today = 100
+  OPEN(unit=10, file='daily_simulated_share_prices.dat')
+  WRITE(10,*) t, share_price
+  DO WHILE (t <= t_final)
+    last_price = share_price_today
+    delta_share = (mu * dt + sigma * dw) * share_price_today
+    t = t + dt
+    share_price_today = last_price + delta_share  ! Evaluate price tomorrow
+    WRITE(10,*) t, share_price_today
+  END DO
   CLOSE(10)
+
+
+  !
+  ! ! Evaluate v from t=0 up to 20 years
+  ! years = 20
+  ! mean_v = SUM(v) / realisations
+  ! the_sum = 0
+  ! n = realisations
+  !
+  ! DO i=0, n
+  !   the_sum = the_sum + (v(i) - mean_v) ** 2.
+  ! ENDDO
+  !
+  ! variance_v = 1.0/(n-1) * sum(x - mean_v) ** 2
+  !
+  ! OPEN(unit=20, file='simulated_share_prices.dat')
+  !   DO t=t0, t_final
+  !     WRITE(20,*) t, share_price(t)
+  !   END DO
+  ! CLOSE(20)
 END SUBROUTINE
