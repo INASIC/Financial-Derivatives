@@ -8,21 +8,23 @@
 ! We use the Black-Scholes model to simulate the share price over time. ...
 !=============================================================================
 PROGRAM statistical_arbitrage
-  INTEGER ::
-  REAL ::
-  REAL, DIMENSION() ::
+  ! Parameters
+  INTEGER, PARAMETER :: t_invest_bond = 100  ! Time sell for risk free bond
+  INTEGER, PARAMETER :: t0 = 0, dt = 1  ! Final day, Integration time
+  REAL, PARAMETER :: r =   ! Risk free rate
+
+
+  INTEGER :: t
+  REAL :: r, share_price, k
+  REAL, DIMENSION(t0:t_invest_bond) :: v, share_price, discounted_value
+
 
 !================================================================
 ! (a) Derive the present value of the portfolio given in Eq. (2)
 !================================================================
 
-! Parameters
-r = ...  ! Risk free rate
 share_price(1) = 100  ! Share price at t = 0
-
-dt = 1  ! 1 day interval
-t0 = 0  ! Starting day
-t_invest_bond = 100  ! Time when we sell portfolio to invest in risk free bond
+t_invest_bond = 100
 !
 
 ! Portfolio discounted value as a function of time (Eq. 2)
