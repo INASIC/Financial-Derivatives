@@ -16,9 +16,11 @@ PROGRAM statistical_arbitrage
   REAL, PARAMETER  :: k = 0.2  !
 
   ! Helpers
-  INTEGER :: i, i_final, seed1, seed2
+  INTEGER :: i, i_final, seed1, seed2, seed
   REAL :: present_value, mean_v, varaince_v
-  REAL :: t_final = 250, dt=1
+  REAL :: t_final, dt
+  REAL :: dw
+  REAL :: delta_share
 
 
 ! Plot a histogram of the random numbers generated from the Box-Muller transform
@@ -31,19 +33,28 @@ END DO
 CLOSE(100)
 
 ! Simulate daily share price over one year
-t = 0
-share_price_today = 100
+t = 0.
+dt = (1./250.) !* 10 ^ (-1)
+t_final = 1.
+share_price_today = 100.
 OPEN(unit=10, file='daily_simulated_share_prices.dat')
-WRITE(10,*) t, share_price
+OPEN(unit=20, file='dW.dat')
+! WRITE(10,*) t*250, share_price_today
+seed1 = 1; seed2 = seed1 + t_final * 250  ! Initialize seeds
 DO WHILE (t <= t_final)
+  WRITE(6,*) t/t_final
+  seed1 = INT(seed1 + dt*250.); seed2 = INT(seed2 + dt*250.)  ! Different seeds
   last_price = share_price_today
-  delta_share = (mu * dt + sigma * dw) * share_price_today
+  dw = rand_box_muller(seed1, seed2)  ! Set dW to random value from Gaussian
+  ! delta_share = (mu * dt + sigma * dw * sqrt(dt)) * 100.
+  share_price_today = 100. * exp(mu - sigma**2 / 2) * t + dw
   t = t + dt
-  share_price_today = last_price + delta_share  ! Evaluate price tomorrow
-  WRITE(10,*) t, share_price_today
+  ! share_price_today = last_price + delta_share  ! Evaluate price tomorrow
+  WRITE(10,*) t*250, share_price_today
+  WRITE(20,*) dw
 END DO
 CLOSE(10)
-
+CLOSE(20)
 
 
 WRITE(6,*) "Answers to the coursework:"
@@ -142,7 +153,7 @@ END FUNCTION
   INTEGER :: t_final  ! trading days in a year
   REAL, DIMENSION(250) :: share_prices_daily  ! Daily simulated share prices
   ! REAL, DIMENSION
-  REAL :: dw  ! Wiener process
+  REAL :: dw ! Wiener process
   REAL :: delta_share
   INTEGER :: t
   REAL :: the_sum
