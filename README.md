@@ -6,3 +6,8 @@ A statistical analysis of the recent price of Bitcoin compared to the British po
 
 In the case that the report PDF does not load on GitHub, access to it can be viewed on the following Google Doc:
 https://docs.google.com/document/d/1dv7NzptODqQffby55s2Gbq3aBpOjWUZzqGSc7f93Odo/edit?usp=sharing.
+
+# Compiling the Program
+
+To compile the program, ensure that you have a FORTRAN compiler. If using the FORTRAN compiler gfortran then simply type in the terminal:
+* gfortran -o sa statistical_arbitrage.f90 && ./sa
